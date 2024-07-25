@@ -98,3 +98,21 @@ consistent hash will only relocate a small part of data which are affect by new 
 3. data skew issue, when the number of nodes is small, there can be the case that some nodes
 are heavily cached and no cache lands on the other nodes, leading to unbalance. Therefore, we
 scale physical nodes to solve it.
+
+## Day 5 - Distributed Nodes
+
+What we learnt?
+
+Consistent Hash to select nodes      Yes                                              YES
+    |----------> If remote node -------------> HTTP Client send req ------> succeed? -----> Cached in remote node and return value
+                    |  NO                                                      ↓ NO 
+                    |-----------------------------------------------> handled by local cache
+
+1. Abstract the peerPicker interface and it should be implemented by each HTTP pool to select nodes/clients.
+
+2. Implemented HTTP pool as both server which serverHTTP based on group name and key, as well as client, which contains a hash ring of nodes to be
+selected based on keys.
+
+3. The methods to retrieve cache are inside gocache, we need to extend it with peerPicker so that we can either get from
+remote nodes or local source, depending on the node which the key belongs to.
+
