@@ -116,3 +116,14 @@ selected based on keys.
 3. The methods to retrieve cache are inside gocache, we need to extend it with peerPicker so that we can either get from
 remote nodes or local source, depending on the node which the key belongs to.
 
+## Day 6 - Cache Penetration
+
+What we learnt?
+
+To solve cache Penetration, i.e. there are a large number of get(key) requests in an instant,
+and the key is not cached or not cached in the current node. If singleflight is not used, these
+requests will be sent to remote nodes or read from the local database, which will cause a sharp increase
+in pressure on remote nodes or local databases.
+
+Therefore, we implement the singleflight Do() to make sure concurrent requests to the same key,
+the following requests wait for the 1st to finish with c.wg.Wait(), and then reuse the response from 1st request.
