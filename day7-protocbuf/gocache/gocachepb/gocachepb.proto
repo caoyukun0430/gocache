@@ -1,0 +1,13 @@
+syntax = "proto3";
+// In the context of Protocol Buffers (protobuf), marshaling and unmarshaling are processes used to convert data structures to and from a binary format.
+package gocachepb;
+option go_package = ".";
+
+message Request {
+  string group = 1;
+  string key = 2;
+}
+
+message Response {
+  bytes value = 1;
+}

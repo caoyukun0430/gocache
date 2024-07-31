@@ -127,3 +127,12 @@ in pressure on remote nodes or local databases.
 
 Therefore, we implement the singleflight Do() to make sure concurrent requests to the same key,
 the following requests wait for the 1st to finish with c.wg.Wait(), and then reuse the response from 1st request.
+
+## Day 7 - Proto Buffer
+
+What we learnt?
+
+To make HTTP requests more efficient, proto buffer is used to encode/decode request and responses.
+The proto buffer request contains group and key element as the original one, and the response proto
+buffer is an slice of bytes, similarly to ByteView. But the limitation is that we only use proto
+buffer for encoding and decoding, but RPC is not used for communication.
