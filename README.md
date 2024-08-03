@@ -136,3 +136,71 @@ To make HTTP requests more efficient, proto buffer is used to encode/decode requ
 The proto buffer request contains group and key element as the original one, and the response proto
 buffer is an slice of bytes, similarly to ByteView. But the limitation is that we only use proto
 buffer for encoding and decoding, but RPC is not used for communication.
+
+## Day 7.2 - Proto Buffer Improvement
+
+As we seen from Day 7, proto buffer is only used to serialize the resquest and response data
+structure, but the communication is still HTTP based.
+
+Now we make the actual GRPC communication
+between the client and server. Therefore, we follow what http.go to formulate the GRPC client
+and server. Both need to implement the service rpc Get(Request) returns (Response) defined
+inside the proto file.
+And the client should use grpc.Dial to establish the connection and use Get() method to send
+the GRPC requests containing group and key. The grpc server listens on the address and reads
+all the info from GRPC request and write the GRPC responses.
+
+```go
+func startCacheServerGrpc(addr string, addrs []string, group *gocache.Group) {
+	pool := gocache.NewGrpcPool(addr)
+	pool.Add(addrs...)
+	group.RegisterNodes(pool)
+	log.Println("gocache is running at", addr)
+	pool.Run()
+}
+
+func startAPIServer(apiAddr string, group *gocache.Group) {
+	http.Handle("/api", http.HandlerFunc(
+		func(w http.ResponseWriter, r *http.Request) {
+			// we just need to extract key from api addr as group httpPool has its parse /<basepath>/<groupname>/<key> required
+			key := r.URL.Query().Get("key")
+			view, err := group.Get(key)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+			w.Header().Set("Content-Type", "application/octet-stream")
+			w.Write(view.ByteSlice())
+
+		}))
+	log.Println("fontend server is running at", apiAddr)
+	log.Fatal(http.ListenAndServe(apiAddr[7:], nil))
+
+}
+
+func main() {
+	// default arguments
+	var port int
+	var api bool
+	flag.IntVar(&port, "port", 8001, "Gocache server port")
+	flag.BoolVar(&api, "api", false, "Start a api server?")
+	flag.Parse()
+
+	apiAddr := "http://localhost:9999"
+	addrMap := map[int]string{
+		8001: ":8001",
+		8002: ":8002",
+		8003: ":8003",
+	}
+	var addrs []string
+	for _, v := range addrMap {
+		addrs = append(addrs, v)
+	}
+	// per port/server create a group, api server on port 8003 only
+	group := createGroup()
+	if api {
+		go startAPIServer(apiAddr, group)
+	}
+	startCacheServerGrpc(addrMap[port], []string(addrs), group)
+}
+```
