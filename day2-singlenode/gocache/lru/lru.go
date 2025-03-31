@@ -70,7 +70,7 @@ func (c *Cache) Add(key string, value Value) {
 	}
 }
 
-// RemoveOldest removes the LRU item
+// RemoveOldest removes the LRU item, no need to expose, interal use
 func (c *Cache) removeLRU() {
 	// we need to remove from DLL, delete from map, reduce usedBytes with key+val length
 	// execute onEvicted if needed

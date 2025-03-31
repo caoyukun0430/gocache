@@ -108,13 +108,16 @@ Consistent Hash to select nodes      Yes                                        
                     |  NO                                                      ↓ NO 
                     |-----------------------------------------------> handled by local cache
 
-1. Abstract the peerPicker interface and it should be implemented by each HTTP pool to select nodes/clients.
+The HTTPPool work as a server that listen and ServeHTTP on base_Addr:port/defaultPrefix, once a request comes, the pool parse URL and calls
+group.Get(key), the gocache.group.Get(key)first check if the key is in the local cache(local means the server itself, e.g. localhost:8003)
+if it does, it returns
 
-2. Implemented HTTP pool as both server which serverHTTP based on group name and key, as well as client, which contains a hash ring of nodes to be
-selected based on keys.
+if it doesnt, the group has pickPeer func to select the vnode based on the key,
 
-3. The methods to retrieve cache are inside gocache, we need to extend it with peerPicker so that we can either get from
-remote nodes or local source, depending on the node which the key belongs to.
+	if it's other nodes(diff than p.base, which is ip:port), then
+		HTTPPool has a mapping of vnode name - httpClient, the vnode itself acts also as a client to send HTTP request, which will be served by HTTPPool
+
+	if the node is itself, it calls mainCache on the local node, lru will search the DB and load into local cache.
 
 ## Day 6 - Cache Penetration
 

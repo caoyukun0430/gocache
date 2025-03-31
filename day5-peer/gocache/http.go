@@ -16,8 +16,12 @@ const (
 	defaultReplicas = 3
 )
 
-// HTTPPool works as 1. client implements PeerPicker for a pool of HTTP peers.
-// 2. server implements ServeHTTP
+// the HTTPPool work as a server that listen and ServeHTTP on base_Addr:port/defaultPrefix, once a request comes, the pool parse URL and calls
+// group.Get(key), the gocache.group.Get(key)first check if the key is in the local cache(local means the server itself, e.g. localhost:8003)
+// if it does, it returns
+// if it doesnt, the group has pickPeer func to select the vnode based on the key, if it's other nodes(diff than p.base, which is ip:port), then
+// HTTPPool has a mapping of vnode name - httpClient, the vnode itself acts also as a client to send HTTP request, which will be served by HTTPPool
+// if the node is itself, it calls mainCache on the local node, lru will search the DB and load into local cache.
 type HTTPPool struct {
 	// this peer's base URL, e.g. "https://example.net:8000"
 	base string
@@ -57,9 +61,10 @@ func (p *HTTPPool) PickPeer(key string) (PeerClient, bool) {
 	// based on the key, we select the node/peer on the ring, consistent hash makes sure certains key belongs to one node
 	if vnode := p.peerRing.Get(key); vnode != "" && vnode != p.base {
 		// vnode is not myself
-		p.Log("Pick peer %s", vnode)
+		p.Log("Pick peer %s, me is %s", vnode, p.base)
 		return p.httpClients[vnode], true
 	}
+	p.Log("Pick me %s", p.base)
 	// no peer picked, get locally myself
 	return nil, false
 }
@@ -68,7 +73,7 @@ var _ PeerPicker = (*HTTPPool)(nil)
 
 // Log info with server name
 func (p *HTTPPool) Log(format string, v ...interface{}) {
-	log.Printf("[Server %s] %s", p.base, fmt.Sprintf(format, v...))
+	log.Printf("[Server %s] action: %s", p.base, fmt.Sprintf(format, v...))
 }
 
 // ServeHTTP handle all http requests
@@ -118,6 +123,7 @@ func (h *httpClient) Request(group string, key string) ([]byte, error) {
 		url.QueryEscape(key),
 	)
 	// send http GET
+	log.Println("Request link is %s", link)
 	res, err := http.Get(link)
 	if err != nil {
 		return nil, err

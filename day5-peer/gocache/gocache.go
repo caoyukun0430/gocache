@@ -91,7 +91,7 @@ func (g *Group) Get(key string) (ByteView, error) {
 
 func (g *Group) load(key string) (ByteView, error) {
 	if g.picker != nil {
-		// we register peers, we see if the node is remote or not.
+		// the group is the core, it has a PeerPicker(HTTPPool is a PeerPicker) to select the virtual node from the key
 		// if remote, we ask remote to send GET request
 		if remote, ok := g.picker.PickPeer(key); ok {
 			if value, err := g.getFromRemote(remote, key); err == nil {
@@ -106,6 +106,7 @@ func (g *Group) load(key string) (ByteView, error) {
 // FOR DISTRIBUTED CASE
 // the core idea is that we dont cache remote value, otherwise each node will cache same value redundantly
 func (g *Group) getFromRemote(node PeerClient, key string) (ByteView, error) {
+	log.Println("getFromRemote node is %+v", node)
 	bytes, err := node.Request(g.name, key)
 	if err != nil {
 		return ByteView{}, err

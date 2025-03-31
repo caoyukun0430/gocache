@@ -34,7 +34,7 @@ func (c *cache) get(key string) (value ByteView, ok bool) {
 	}
 
 	if v, ok := c.lru.Get(key); ok {
-		fmt.Printf("lru.Get v %s\n", v)
+		fmt.Printf("lru.Get %s\n", v)
 		return v.(ByteView), ok
 	}
 

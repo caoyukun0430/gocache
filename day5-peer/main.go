@@ -32,7 +32,8 @@ func startCacheServer(addr string, addrs []string, group *gocache.Group) {
 	pool := gocache.NewHTTPPool(addr)
 	pool.Add(addrs...)
 	group.RegisterNodes(pool)
-	log.Println("geecache is running at", addr)
+	log.Println("gocache is running at", addr)
+	// here regulate that cache server listen only on port 8001 8002 and 8003
 	log.Fatal(http.ListenAndServe(addr[7:], pool))
 }
 
@@ -51,6 +52,7 @@ func startAPIServer(apiAddr string, group *gocache.Group) {
 
 		}))
 	log.Println("fontend server is running at", apiAddr)
+	// here regulate that api server listen only on port 9999
 	log.Fatal(http.ListenAndServe(apiAddr[7:], nil))
 
 }
